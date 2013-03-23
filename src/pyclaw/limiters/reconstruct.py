@@ -63,4 +63,4 @@ def weno(k, q):
     qr[:,:k-1]  = qr[:,-2*k+2:-k+1]
     qr[:,-k+1:] = qr[:,k-1:2*k-2]
 
-    return ql, qr, max_smoothness
+    return ql, qr, max_smoothness, sigma

@@ -148,6 +148,8 @@ class State(clawpack.pyclaw.State):
         self._F_da = None
         self.gFVec = None
 
+        self.weno_sigma = None
+
         # ========== Attribute Definitions ===================================
         self.problem_data = {}
         r"""(dict) - Dictionary of global values for this patch, 

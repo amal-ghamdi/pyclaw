@@ -253,7 +253,6 @@ class SharpClawSolver(Solver):
         except CFLError:
             return False
 
-        print max_weight
 
 
     def set_mthlim(self):
@@ -373,6 +372,7 @@ class SharpClawSolver1D(SharpClawSolver):
         """   
         self.num_dim = 1
         super(SharpClawSolver1D,self).__init__(riemann_solver,claw_package)
+        
 
 
     def teardown(self):
@@ -461,7 +461,7 @@ class SharpClawSolver1D(SharpClawSolver):
                 raise NotImplementedError('TVD reconstruction not implemented')
             elif self.lim_type==2: #WENO Reconstruction
                 if self.char_decomp==0: #No characteristic decomposition
-                    ql,qr, max_weight=recon.weno(5,q)
+                    ql,qr, max_weight, state.weno_sigma=recon.weno(5,q)
                 elif self.char_decomp==1: #Wave-based reconstruction
                     q_l=q[:,:-1]
                     q_r=q[:,1: ]
