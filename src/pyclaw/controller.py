@@ -220,6 +220,9 @@ class Controller(object):
         if self.solver is None or self.solution is None:
             raise Exception('To run, a Controller must have a Solver and a Solution.')
 
+        ### create viewer
+        ### hand it in
+        ### destroy viewer
         self.start_frame = self.solution.start_frame
         if len(self.solution.patch.grid.gauges)>0:
             self.solution.patch.grid.setup_gauge_files(self.outdir)

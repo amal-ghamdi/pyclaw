@@ -346,6 +346,17 @@ class Solution(object):
             "implemented as of yet, please refer to the plotting module for" +
             " how to plot solutions.")
 
+    def save(file_name, viewer, write_aux=True, ):
+        r"""
+        """
+        viewer.view_int()
+        viewer.view_bool()
+        viewer.view_string()
+        viewer.view_dict()
+        viewer.view_array()
+    def load():
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
