@@ -1,8 +1,8 @@
 .. _develop:
 
-============================
-Information for developers
-============================
+==================================
+General information for developers
+==================================
 
 The PyClaw repository is hosted on Github at 
 http://github.com/clawpack/pyclaw.  
@@ -11,7 +11,7 @@ http://github.com/clawpack/pyclaw.
 Guidelines for contributing
 ==================================
 When preparing contributions, please follow the guidelines in
-:ref:`using-git`.  Also:
+:ref:`contribution`.  Also:
 
     * If the planned changes are substantial or will be backward-incompatible,
       it's best to discuss them on the `claw-dev Google group

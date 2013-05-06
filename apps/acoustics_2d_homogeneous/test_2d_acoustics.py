@@ -16,9 +16,7 @@ def test_2d_acoustics():
                 test_pressure = test_q[0,:,:]
                 thisdir = os.path.dirname(__file__)
                 expected_pressure = np.loadtxt(os.path.join(thisdir,data_filename))
-                test_err = np.linalg.norm(expected_pressure-test_pressure)
-                expected_err = 0
-                return check_diff(expected_err, test_err, abstol=1e-1)
+                return check_diff(expected_pressure, test_pressure, reltol=1e-3)
             else:
                 return
         return verify
@@ -27,10 +25,10 @@ def test_2d_acoustics():
     from acoustics import acoustics2D
 
     classic_tests = gen_variants(acoustics2D, verify_data('verify_classic.txt'),
-                                 kernel_languages=('Fortran',), solver_type='classic')
+                                 kernel_languages=('Fortran',), solver_type='classic', disable_output=True)
 
     sharp_tests   = gen_variants(acoustics2D, verify_data('verify_sharpclaw.txt'),
-                                 kernel_languages=('Fortran',), solver_type='sharpclaw')
+                                 kernel_languages=('Fortran',), solver_type='sharpclaw', disable_output=True)
 
     from itertools import chain
     for test in chain(classic_tests, sharp_tests):

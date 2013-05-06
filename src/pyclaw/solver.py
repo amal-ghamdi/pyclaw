@@ -338,13 +338,13 @@ class Solver(object):
         for idim,dim in enumerate(grid.dimensions):
             # First check if we are actually on the boundary
             # (in case of a parallel run)
-            if state.grid.lower[idim] == state.patch.lower_global[idim]:
+            if state.grid.on_lower_boundaries[idim]:
                 # If a user defined boundary condition is being used, send it on,
                 # otherwise roll the axis to front position and operate on it
                 if self.bc_lower[idim] == BC.custom:
                     self.qbc_lower(state,dim,state.t,self.qbc,idim)
                 elif self.bc_lower[idim] == BC.periodic:
-                    if state.grid.upper[idim] == state.patch.upper_global[idim]:
+                    if state.grid.on_upper_boundaries[idim]:
                         # This process owns the whole domain
                         self.qbc_lower(state,dim,state.t,np.rollaxis(self.qbc,idim+1,1),idim)
                     else:
@@ -352,11 +352,11 @@ class Solver(object):
                 else:
                     self.qbc_lower(state,dim,state.t,np.rollaxis(self.qbc,idim+1,1),idim)
 
-            if state.grid.upper[idim] == state.patch.upper_global[idim]:
+            if state.grid.on_upper_boundaries[idim]:
                 if self.bc_upper[idim] == BC.custom:
                     self.qbc_upper(state,dim,state.t,self.qbc,idim)
                 elif self.bc_upper[idim] == BC.periodic:
-                    if state.grid.lower[idim] == state.patch.lower_global[idim]:
+                    if state.grid.on_lower_boundaries[idim]: 
                         # This process owns the whole domain
                         self.qbc_upper(state,dim,state.t,np.rollaxis(self.qbc,idim+1,1),idim)
                     else:
@@ -478,13 +478,13 @@ class Solver(object):
         for idim,dim in enumerate(patch.dimensions):
             # First check if we are actually on the boundary
             # (in case of a parallel run)
-            if state.grid.lower[idim] == state.patch.lower_global[idim]:
+            if state.grid.on_lower_boundaries[idim]:
                 # If a user defined boundary condition is being used, send it on,
                 # otherwise roll the axis to front position and operate on it
                 if self.aux_bc_lower[idim] == BC.custom:
                     self.auxbc_lower(state,dim,state.t,self.auxbc,idim)
                 elif self.aux_bc_lower[idim] == BC.periodic:
-                    if state.grid.upper[idim] == state.patch.upper_global[idim]:
+                    if state.grid.on_upper_boundaries[idim]:
                         # This process owns the whole patch
                         self.auxbc_lower(state,dim,state.t,np.rollaxis(self.auxbc,idim+1,1),idim)
                     else:
@@ -492,11 +492,11 @@ class Solver(object):
                 else:
                     self.auxbc_lower(state,dim,state.t,np.rollaxis(self.auxbc,idim+1,1),idim)
 
-            if state.grid.upper[idim] == state.patch.upper_global[idim]:
+            if state.grid.on_upper_boundaries[idim]:
                 if self.aux_bc_upper[idim] == BC.custom:
                     self.auxbc_upper(state,dim,state.t,self.auxbc,idim)
                 elif self.aux_bc_upper[idim] == BC.periodic:
-                    if state.grid.lower[idim] == state.patch.lower_global[idim]:
+                    if state.grid.on_lower_boundaries[idim]:
                         # This process owns the whole patch
                         self.auxbc_upper(state,dim,state.t,np.rollaxis(self.auxbc,idim+1,1),idim)
                     else:
@@ -714,6 +714,7 @@ class Solver(object):
         r"""Write solution (or derived quantity) values at each gauge coordinate
             to file.
         """
+        import numpy as np
         for i,gauge in enumerate(solution.state.grid.gauges):
             if self.num_dim == 1:
                 ix=gauge[0];
@@ -725,8 +726,21 @@ class Solver(object):
                 q=solution.state.q[:,ix,iy]
             p=self.compute_gauge_values(q,aux)
             t=solution.t
-            solution.state.grid.gauge_files[i].write(str(t)+' '+' '.join(str(j) for j in p)+'\n')  
-
+            if solution.state.keep_gauges:
+                gauge_data = solution.state.gauge_data
+                if len(gauge_data) == len(solution.state.grid.gauges):
+                    gauge_data[i]=np.vstack((gauge_data[i],np.append(t,p)))
+                else:
+                    gauge_data.append(np.append(t,p))
+            
+            try:
+                solution.state.grid.gauge_files[i].write(str(t)+' '+' '.join(str(j) 
+                                                         for j in p)+'\n')  
+            except:
+                raise Exception("Gauge files are not set up correctly. You should call \
+                       \nthe method `setup_gauge_files` of the Grid class object \
+                       \nbefore any call for `write_gauge_values` from the Solver class.")
+                
 
 if __name__ == "__main__":
     import doctest

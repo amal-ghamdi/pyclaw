@@ -18,11 +18,22 @@ class Patch(pyclaw_geometry.Patch):
             lower = self.lower_global[i] + nrange[0]*self.delta[i]
             upper = self.lower_global[i] + nrange[1]*self.delta[i]
             num_cells   = nrange[1]-nrange[0]
+
             grid_dimensions.append(pyclaw_geometry.Dimension(lower,upper,
                                         num_cells,name=dimensions[i].name))
 
-        self.grid = pyclaw_geometry.Grid(grid_dimensions)
 
+            if nrange[0] == 0:
+                grid_dimensions[-1].on_lower_boundary = True
+            else:
+                grid_dimensions[-1].on_lower_boundary = False
+
+            if nrange[1] == self.num_cells_global[i]:
+                grid_dimensions[-1].on_upper_boundary = True
+            else:
+                grid_dimensions[-1].on_upper_boundary = False  
+
+        self.grid = pyclaw_geometry.Grid(grid_dimensions)
 
     def _create_DA(self):
         r"""Returns a PETSc DA and associated global Vec.

@@ -64,7 +64,7 @@ class State(object):
     @property
     def mp(self):
         r"""(int) - Number of derived quantities"""
-        if self.aux is not None: return self.aux.shape[0]
+        if self.p is not None: return self.p.shape[0]
         else: return 0
     @mp.setter
     def mp(self,mp):
@@ -113,6 +113,14 @@ class State(object):
         r"""(float) - Current time represented on this patch, 
             ``default = 0.0``"""
         self.index_capa = -1
+        self.keep_gauges = False
+        r"""(bool) - Keep gauge values in memory for every time step, 
+        ``default = False``"""
+        self.gauge_data = []
+        r"""(list) - List of numpy.ndarray objects. Each element of the list
+        stores the values of the corresponding gauge if ``keep_gauges`` is set
+        to ``True``"""
+        
 
         self.q   = self.new_array(num_eqn)
         self.aux = self.new_array(num_aux)
@@ -285,6 +293,12 @@ class State(object):
         Returns a copy of the global q array
         """
         return self.q.copy()
+
+    def get_aux_global(self):
+        r"""
+        Returns a copy of the global aux array
+        """
+        return self.aux.copy()
 
 if __name__ == "__main__":
     import doctest
