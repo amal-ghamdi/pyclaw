@@ -40,15 +40,16 @@ pysolver_1D.kernel_language = 'Python'
 pysolver_1D.rp = rp_advection.rp_advection_1d
 
 solvers_1D = {
-    'current_fortran' : fsolver_1D,
-    'current_python'  : pysolver_1D
+    'current_fortran' : (fsolver_1D, pyclaw),
+    'current_python'  : (pysolver_1D, pyclaw)
 }
 
 solvers_2D = {
-    'current_fortran' : fsolver_2D
+    'current_fortran' : (fsolver_2D, pyclaw)
 }
 
 new_solvers_1D = {}
+new_solvers_2D = {}
 
 # Here we try and bring in "experimental" solvers for comparison
 # If we can't bring in the solver, complain and move on...
@@ -57,11 +58,9 @@ try:
     import next
 
     iso_c_solver = next.ISO_C_ClawSolver1D(None, 'clawpack.pyclaw')
-
     iso_c_solver.kernel_language = 'Fortran'
     iso_c_solver.rp = next.iso_c_rp1_advection(1.0)
-
-    new_solvers_1D['iso_c'] = iso_c_solver
+    new_solvers_1D['iso_c'] = iso_c_solver, pyclaw
 
 except ImportError as err:
     print "Unable to import ISO C variant", err
@@ -69,12 +68,25 @@ except ImportError as err:
 
 solvers_1D.update(new_solvers_1D)
 
-def init_1D(nx):
+try:
+    from clawpack import cudaclaw
+    cudasolver_2D = cudaclaw.CUDASolver2D()
+    cudasolver_2D.rp = rp2_shallow_roe_with_efix
+    new_solvers_2D['cudaclaw'] = cudasolver_2D, cudaclaw
+
+except ImportError as err:
+    print "Unable to import cudaclaw variant", err
+    raise err
+
+solvers_2D.update(new_solvers_2D)
+
+
+def init_1D(nx, xclaw):
     """ Initialize the grid for the 1D advection problem"""
-    x = pyclaw.Dimension('x',0.0,1.0,nx)
-    domain = pyclaw.Domain(x)
+    x = xclaw.Dimension('x',0.0,1.0,nx)
+    domain = xclaw.Domain(x)
     num_eqn = 1
-    state = pyclaw.State(domain,num_eqn)
+    state = xclaw.State(domain,num_eqn)
     state.problem_data['u']=1.
 
     grid = state.grid
@@ -83,7 +95,7 @@ def init_1D(nx):
     state.q[0,:] = np.exp(-beta * (xc-x0)**2) * np.cos(gamma * (xc - x0))
     return state, domain
 
-def init_2D(nx):
+def init_2D(nx, xclaw):
     """ Initialize the grid for the 2D shallow water problem"""
 
     # Domain:
@@ -93,12 +105,12 @@ def init_2D(nx):
     ylower = -2.5
     yupper = 2.5
     my = nx[1]
-    x = pyclaw.Dimension('x',xlower,xupper,mx)
-    y = pyclaw.Dimension('y',ylower,yupper,my)
-    domain = pyclaw.Domain([x,y])
+    x = xclaw.Dimension('x',xlower,xupper,mx)
+    y = xclaw.Dimension('y',ylower,yupper,my)
+    domain = xclaw.Domain([x,y])
 
     num_eqn = 3  # Number of equations
-    state = pyclaw.State(domain,num_eqn)
+    state = xclaw.State(domain,num_eqn)
 
     grav = 1.0 # Parameter (global auxiliary variable)
     state.problem_data['grav'] = grav
@@ -133,10 +145,12 @@ def run():
 
     import riemann_compare
 
-    claw = pyclaw.Controller()
+    xclaw = riemann_compare.xclaw
+
+    claw = xclaw.Controller()
     claw.keep_copy = True
-    claw.solution = pyclaw.Solution(riemann_compare.state,
-                                    riemann_compare.domain)
+    claw.solution = xclaw.Solution(riemann_compare.state,
+                                   riemann_compare.domain)
     claw.solver = riemann_compare.solver
 
     claw.output_format = None
@@ -167,12 +181,13 @@ def compare_1D(nx=1000):
 
     times, tests = {}, {}
 
-    for name, solver in solvers.iteritems():
+    for name, (solver, xclaw) in solvers.iteritems():
         solver.num_waves = rp_advection.num_waves
         solver.bc_lower[0] = 2
         solver.bc_upper[0] = 2
         riemann_compare.solver = solver
-        riemann_compare.state, riemann_compare.domain = init_1D(nx)
+        riemann_compare.xclaw = xclaw
+        riemann_compare.state, riemann_compare.domain = init_1D(nx, xclaw)
 
         # benchmark
         t = timeit(stmt='riemann_compare.run()',
@@ -200,8 +215,7 @@ def compare_2D(nx=(250,250)):
 
     times, tests = {}, {}
 
-    for name, solver in solvers.iteritems():
-
+    for name, (solver, xclaw) in solvers.iteritems():
         solver.num_waves = 3
         solver.bc_lower[0] = pyclaw.BC.extrap
         solver.bc_upper[0] = pyclaw.BC.wall
@@ -211,11 +225,12 @@ def compare_2D(nx=(250,250)):
         solver.limiters = pyclaw.limiters.tvd.MC
         solver.dimensional_split=1
 
-#        solver.dt_initial = 0.001
-#        solver.dt_variable = False
+        solver.dt_initial = 0.001
+        solver.dt_variable = False
 
         riemann_compare.solver = solver
-        riemann_compare.state, riemann_compare.domain = init_2D(nx)
+        riemann_compare.xclaw = xclaw
+        riemann_compare.state, riemann_compare.domain = init_2D(nx, xclaw)
 
         # benchmark
         t = timeit(stmt='riemann_compare.run()',
@@ -265,7 +280,7 @@ if __name__=="__main__":
 
     print_time_accuracy(times, tests, riemann_compare.solvers_1D)
 
-    riemann_compare.tfinal = 2.5
+    riemann_compare.tfinal = 0.01
     print ("\nRiemann comparison on 2D shallow water equation to t=%g" + \
                " with %dx%d grid points") % ((riemann_compare.tfinal,) + nx_2D)
 
