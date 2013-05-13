@@ -62,9 +62,8 @@ try:
     iso_c_solver.rp = next.iso_c_rp1_advection(1.0)
     new_solvers_1D['iso_c'] = iso_c_solver, pyclaw
 
-except ImportError as err:
+except (ImportError, OSError) as err:
     print "Unable to import ISO C variant", err
-    raise err
 
 solvers_1D.update(new_solvers_1D)
 
