@@ -12,18 +12,18 @@ Cythonized bindings to CUDA-enabled hyperbolic solvers for PyClaw
 
 cdef extern from "cudaclaw.h" :
     ctypedef double real
-    cdef extern int shallow_water_solver_allocate(int, int, int, 
+    cdef extern int shallow_water_solver_allocate(int, int, int,
                                                   int, int, int,
-                                                  real, real, 
                                                   real, real,
-                                                  real, real) 
-    cdef extern int shallow_water_solver_setup (int bc_left, 
-                                                int bc_right, 
-                                                int bc_up, 
-                                                int bc_down, 
+                                                  real, real,
+                                                  real, real)
+    cdef extern int shallow_water_solver_setup (int bc_left,
+                                                int bc_right,
+                                                int bc_up,
+                                                int bc_down,
                                                 int limiter)
-    
-    cdef extern int hyperbolic_solver_2d_step (real dt, real* dt) 
+
+    cdef extern int hyperbolic_solver_2d_step (real dt, real* dt)
     cdef extern int hyperbolic_solver_2d_get_qbc (real* qbc)
     cdef extern int hyperbolic_solver_2d_set_qbc (real* qbc)
 
@@ -38,7 +38,7 @@ cimport numpy as np
 def check_err(err):
 
     if (not err):
-        return 
+        return
     else:
         caller = sys._getframe(1).f_code.co_name
         raise Exception(
@@ -55,7 +55,7 @@ class CUDAState(clawpack.pyclaw.State):
     def set_q_from_qbc(self, int num_ghost, np.ndarray[real, ndim=3, mode="fortran"] qbc):
         r"""
         Set the value of q using the array qbc. For CUDASolver, this
-        involves retrieving from device memory into qbc, then copying 
+        involves retrieving from device memory into qbc, then copying
         the appropriate data into q
         """
 
@@ -92,27 +92,27 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
     def allocate_workspace(self, solution):
         r"""
         allocate_workspace (solution):
-    
+
         Allocates memory for CUDA subroutines based on solution
         """
-    
+
         state = solution.state
         grid  = state.grid
-    
+
         cdef int ghostCells = self.num_ghost
-    
+
         cdef int cellsX = grid.num_cells[0] + ghostCells*2
         cdef int cellsY = grid.num_cells[1] + ghostCells*2
         cdef int numStates = 3
         cdef int numWaves  = 3
         cdef int numCoeff  = 1
-        cdef real startX = grid.x.lower 
+        cdef real startX = grid.x.lower
         cdef real endX   = grid.x.upper
         cdef real startY = grid.y.lower
         cdef real endY   = grid.y.upper
         cdef real startTime = 0
         cdef real endTime = 1e10
-    
+
         shallow_water_solver_allocate(cellsX,
                                       cellsY,
                                       ghostCells,
@@ -125,43 +125,43 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
                                       endY,
                                       startTime,
                                       endTime)
-    
+
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def setup(self, solution):
         r"""
         setup (solution):
-    
-        Sets up a 2-D Shallow-Water Riemann solver with appropriate boundary 
+
+        Sets up a 2-D Shallow-Water Riemann solver with appropriate boundary
         conditions, limiter, grid size, and ghost cells.
         """
-    
-        cdef int err    
-    
+
+        cdef int err
+
         # PyClaw boundary conditions
         # bc_lower = [left, down]
         # bc_upper = [right, up]
-    
+
         # CUDACLAW boundary conditions
         # bc = [left, right, up, down]
-        # left, ... columns ... , right 
+        # left, ... columns ... , right
         # up, ... rows ... , down
-    
+
         bc_left  = self.bc_lower[0]
         bc_right = self.bc_upper[0]
         bc_down  = self.bc_lower[1]
         bc_up    = self.bc_upper[1]
-    
+
         limiter  = self.limiters
-    
+
         err = shallow_water_solver_setup(bc_left,
                                          bc_right,
                                          bc_up,
                                          bc_down,
                                          limiter)
         check_err(err)
-    
+
         self.allocate_workspace(solution)
         self.allocate_bc_arrays(solution.state)
 
@@ -173,40 +173,40 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
         r"""
         Evolve solution from solution.t to tend.  If tend is not specified,
         take a single step.
-        
-        This method contains the machinery to evolve the solution object in
-        ``solution`` to the requested end time tend if given, or one 
-        step if not.          
 
-        This method contains a subset of the functionality from the full 
+        This method contains the machinery to evolve the solution object in
+        ``solution`` to the requested end time tend if given, or one
+        step if not.
+
+        This method contains a subset of the functionality from the full
         evolve_to_time routine.
-    
+
         :Input:
          - *solution* - (:class:`Solution`) Solution to be evolved
-         - *tend* - (float) The end time to evolve to, if not provided then 
+         - *tend* - (float) The end time to evolve to, if not provided then
            the method will take a single time step.
-            
+
         :Output:
          - (dict) - Returns the status dictionary of the solver
         """
-    
+
         if not self._is_set_up:
             self.setup(solution)
-        
+
         if tend == None:
             take_one_step = True
         else:
             take_one_step = False
-            
+
         # Parameters for time-stepping
         tstart = solution.t
-    
+
         # Reset status dictionary
         self.status['cflmax'] = float('NaN')
         self.status['dtmin'] = self.dt
         self.status['dtmax'] = self.dt
         self.status['numsteps'] = 0
-    
+
         # Setup for the run
         if self.dt_variable:
             raise Exception('Variable time steps currently disabled')
@@ -218,28 +218,28 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
         if tend <= tstart and not take_one_step:
             self.logger.info("Already at or beyond end time: no evolution required.")
             self.max_steps = 0
-           
+
         state = solution.state
 
         if not state.synced:
             self.qbc = state.get_qbc_from_q(self.num_ghost,self.qbc)
-     
+
         # Main time-stepping loop
         for n in xrange(self.max_steps):
-                       
+
             # Adjust dt so that we hit tend exactly if we are near tend
             if not take_one_step:
                 if solution.t + self.dt > tend and tstart < tend:
                     self.dt = tend - solution.t
                 if tend - solution.t - self.dt < 1.e-14:
                     self.dt = tend - solution.t
-            
+
             saved_dt = self.dt
 
             ### explicitly hard-code dt here
 
             self.step(solution)
-    
+
             self.dt = saved_dt
 
             # Accept this step
@@ -251,17 +251,17 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
             self.write_gauge_values(solution)
             # Increment number of time steps completed
             self.status['numsteps'] += 1
-                    
+
             # See if we are finished yet
             if solution.t >= tend or take_one_step:
                 break
-      
+
         # End of main time-stepping loop -------------------------------------
 
         state = solution.state
         if not state.synced:
             state.set_q_from_qbc(self.num_ghost,self.qbc)
-    
+
         return self.status
 
 
@@ -270,13 +270,13 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
     def step(self, solution):
         """
         step (solution):
-        
-        Advances the 2-D Shallow-Water solution by the requested time dt, 
-        then returns a suggested next_dt that obeys the CFL condition for 
+
+        Advances the 2-D Shallow-Water solution by the requested time dt,
+        then returns a suggested next_dt that obeys the CFL condition for
         the current solution by a safety factor of 0.9.
 
         This method leaves the solution *unsynced* with CUDA device memory,
-        the user must call set_q_from_qbc to retrieve the solution from the 
+        the user must call set_q_from_qbc to retrieve the solution from the
         device.
 
         Unsupported functionality:
@@ -284,20 +284,20 @@ class CUDASolver2D(clawpack.pyclaw.ClawSolver2D):
         solver.before_step
         solver.step_source
         solver.cfl
-    
+
         :Input:
          - *solution* - (:class:`~cudaclaw.Solution`) solution to be evolved
-         
-        :Output: 
+
+        :Output:
          - (bool) - Currently always returns True (No CFL post-checks)
 
         """
-    
+
         cdef real next_dt
         cdef real dt = self.dt
 
         err = hyperbolic_solver_2d_step(dt, &next_dt)
-        check_err(err)    
+        check_err(err)
 
         solution.state.synced = False
 

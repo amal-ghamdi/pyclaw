@@ -28,8 +28,8 @@ size_t qbc_size;
 cudaError_t err;
 
 int shallow_water_solver_allocate(int cellsX, 
-								  int cellsY, 
-								  int ghostCells, 
+				  int cellsY, 
+				  int ghostCells, 
                                   int numStates, 
                                   int numWaves, 
                                   int numCoeff,
@@ -41,17 +41,17 @@ int shallow_water_solver_allocate(int cellsX,
                                   real endTime) 
 {
 	param = new pdeParam(cellsX,
-      				     cellsY,
-      				     ghostCells,
-      				     numStates,
-      				     numWaves,
-      				     numCoeff,
-      				     startX,
-      				     endX,
-      				     startY,
-      				     endY,
-      				     startTime,
-      				     endTime);
+			     cellsY,
+			     ghostCells,
+			     numStates,
+			     numWaves,
+			     numCoeff,
+			     startX,
+			     endX,
+			     startY,
+			     endY,
+			     startTime,
+			     endTime);
 
 	qbc_size = param->cellsX*param->cellsY*param->numStates*sizeof(real);
 
@@ -90,9 +90,9 @@ int hyperbolic_solver_2d_step (real dt, real* next_dt)
 
 	setBoundaryConditions(*param, bc);
 	limited_Riemann_Update(*param, 
-						   shallow_water_h, 
-						   shallow_water_v, 
-						   phi_mc);
+			       shallow_water_h, 
+			       shallow_water_v, 
+			       phi_mc);
 	err = cudaMemcpy(next_dt, param->waveSpeedsX, sizeof(real), cudaMemcpyDeviceToHost);
 
     if (err != cudaSuccess) {

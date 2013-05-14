@@ -10,11 +10,11 @@ logging.config.fileConfig(_DEFAULT_LOG_CONFIG_PATH)
 __all__ = []
 
 __all__.extend(['Controller','Dimension','Patch','Domain',
-	            'Solution','State','CFL','riemann'])
+                'Solution','State','CFL','riemann'])
 
 from clawpack.pyclaw.controller import Controller
 from clawpack.pyclaw.geometry import Patch, Domain, Dimension
-from clawpack.pyclaw.solution import Solution 
+from clawpack.pyclaw.solution import Solution
 from clawpack.pyclaw.cfl import CFL
 from clawpack.cudaclaw.solver import CUDASolver2D
 from clawpack.cudaclaw.state import State

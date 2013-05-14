@@ -13,7 +13,7 @@ import numpy
 
 def find_in_path(name, path):
     "Find a file in a search path"
-    #adapted by Robert from 
+    #adapted by Robert from
     # http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
     for dir in path.split(os.pathsep):
         binpath = pjoin(dir, name)
@@ -56,9 +56,9 @@ def locate_cuda():
             raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
 
     cudaconfig['cuflags'] = '-m64 -gencode arch=compute_10,code=sm_10' + \
-    					    ' -gencode arch=compute_20,code=sm_20' + \
-    					    ' -gencode arch=compute_30,code=sm_30' + \
-    					    ' -gencode arch=compute_35,code=sm_35' 
+        ' -gencode arch=compute_20,code=sm_20' + \
+        ' -gencode arch=compute_30,code=sm_30' + \
+        ' -gencode arch=compute_35,code=sm_35'
 
     return cudaconfig
 
@@ -74,15 +74,15 @@ def configuration(parent_package='',top_path=None):
 
     from numpy.distutils.misc_util import Configuration
     config = Configuration(
-    	'cudaclaw', 
-    	parent_package, 
+    	'cudaclaw',
+    	parent_package,
     	top_path,
     	)
     config.add_data_files('log.config')
     config.add_subpackage('limiters')
     config.add_subpackage('io')
     config.add_extension("cudaclaw",
-                         ["cudaclaw.pyx", 
+                         ["cudaclaw.pyx",
                           "cuda/cudaclaw.cu"],
                          language="c++",
                          library_dirs=[CUDA['lib']],
@@ -94,5 +94,5 @@ def configuration(parent_package='',top_path=None):
 
 
 if __name__ == '__main__':
-    config = configuration(top_path='')            
+    config = configuration(top_path='')
     setup(**config.todict())
