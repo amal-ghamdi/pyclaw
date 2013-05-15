@@ -75,6 +75,7 @@ try:
 
 except ImportError as err:
     print "Unable to import cudaclaw variant", err
+    print "Did CUDAClaw build correctly?"
     raise err
 
 solvers_2D.update(new_solvers_2D)
@@ -260,7 +261,7 @@ if __name__=="__main__":
         # '(2,2)' -> (2,2)
         nx_2D = tuple(int(i) for i in argv.split(','))
     else:
-        nx_2D = 100,100
+        nx_2D = 256,256
 
     def print_time_accuracy(times, tests, solvers):
         print "\n=====TIME====="
