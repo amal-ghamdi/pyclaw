@@ -13,9 +13,6 @@
 #define VERTICAL_BLOCKSIZEX 32	//16 //32
 #define VERTICAL_BLOCKSIZEY 12	//24 //12
 
-#define CELLSX 256
-#define CELLSY 256
-
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "cuda_runtime_api.h"
@@ -24,4 +21,4 @@
 
 #include "params.h"
 
-#endif //-Xptxas -dlcm=cg 
+#endif //-Xptxas -dlcm=cg
