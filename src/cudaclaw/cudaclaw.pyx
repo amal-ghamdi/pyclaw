@@ -50,37 +50,73 @@ class CUDAState(clawpack.pyclaw.State):
     # local members
     synced = False
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def set_q_from_qbc(self, int num_ghost, np.ndarray[real, ndim=3, mode="fortran"] qbc):
-        r"""
-        Set the value of q using the array qbc. For CUDASolver, this
-        involves retrieving from device memory into qbc, then copying
-        the appropriate data into q
-        """
-
+    def _get_qbc(self, np.ndarray[real, ndim=3, mode="fortran"] qbc):
         cdef int err
-
         err = hyperbolic_solver_2d_get_qbc(&qbc[0,0,0])
         check_err(err)
 
-        self.q = qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost]
-        synced = True
+    def set_q_from_qbc(self, num_ghost, qbc):
+        r"""
+        Set the value of q using the array qbc. For CUDASolver, this
+        involves retrieving from device memory into qbc, reordering back from
+        CUDAClaw order to PyClaw order, then copying the appropriate data into q.
 
-    def get_qbc_from_q(self, num_ghost, np.ndarray[real, ndim=3, mode="fortran"] qbc):
+        (fastest-moving index first)
+        CUDAClaw order: (x, y, e)
+        PyClaw   order: (e, x, y)
         """
-        Fills in the interior of qbc by copying q to it.  For CUDASolver,
-        this involves copying the appropriate data into qbc, then copying
-        qbc into device memory.
-        """
+
+        cdef int meqn, mx, my
+
+        meqn = qbc.shape[0]
+        mx   = qbc.shape[1]
+        my   = qbc.shape[2]
+
+        # need to lift this allocation out to a state buffer
+        qbc = np.empty((mx,my,meqn), order='F')
+
+        self._get_qbc(qbc)
+
+        qbct = np.rollaxis(qbc, 2, 0)
+        qbct = np.asfortranarray(np.reshape(qbct, (meqn, mx, my), order='F'))
+
+        self.q = qbct[:,num_ghost:-num_ghost,num_ghost:-num_ghost]
+
+        self.synced = True
+
+
+    def _set_qbc(self, np.ndarray[real, ndim=3, mode="fortran"] qbc):
 
         cdef int err
 
-        qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost] = self.q
-
         err = hyperbolic_solver_2d_set_qbc(&qbc[0,0,0])
         check_err(err)
-        synced = True
+
+    def get_qbc_from_q(self, num_ghost, qbc):
+        """
+        Fills in the interior of qbc by copying q to it.  For CUDASolver,
+        this involves copying the appropriate data into qbc, reordering from
+        PyClaw order to CUDACLAW order, then copying qbc into device memory.
+
+        (fastest-moving index first)
+        PyClaw   order: (e, x, y)
+        CUDAClaw order: (x, y, e)
+        """
+
+        cdef int err, meqn, mx, my
+
+        qbc[:,num_ghost:-num_ghost,num_ghost:-num_ghost] = self.q
+
+        meqn = qbc.shape[0]
+        mx   = qbc.shape[1]
+        my   = qbc.shape[2]
+
+        qbct = np.rollaxis(qbc, 0, 3)
+        qbct = np.asfortranarray(np.reshape(qbct, (mx, my, meqn), order='F'))
+
+        self._set_qbc(qbct)
+
+        self.synced = True
 
         return qbc
 
