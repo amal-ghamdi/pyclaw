@@ -642,8 +642,8 @@ class Solver(object):
 
             # Keep a backup in case we need to retake a time step
             if self.dt_variable:
-                q_backup = state.q.copy('F')
-                told = solution.t
+                state.q_backup = state.q.copy('F')
+                state.told = solution.t
             
             self.step(solution)
 
@@ -668,8 +668,8 @@ class Solver(object):
                 # Reject this step
                 self.logger.debug("Rejecting time step, CFL number too large")
                 if self.dt_variable:
-                    state.q = q_backup
-                    solution.t = told
+                    state.q = state.q_backup
+                    solution.t = state.told
                 else:
                     # Give up, we cannot adapt, abort
                     self.status['cflmax'] = \
