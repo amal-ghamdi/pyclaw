@@ -29,13 +29,13 @@ def setplot(plotdata):
     plotaxes.axescmd = 'subplot(211)'
     
     #plotaxes.xlimits = [0.,150.]
-    plotaxes.ylimits = [-.2,1.0]
+    #plotaxes.ylimits = [-.2,1.0]
     plotaxes.title = 'Pressure'
 
     # Set up for item on these axes:
     plotitem = plotaxes.new_plotitem(plot_type='1d_plot')
     plotitem.plot_var = 0
-    plotitem.plotstyle = '-o'
+    plotitem.plotstyle = '-'
     plotitem.color = 'b'
     plotitem.show = True       # show on plot?
     plotitem.kwargs = {'linewidth':2,'markersize':5}
@@ -46,7 +46,7 @@ def setplot(plotdata):
     plotaxes = plotfigure.new_plotaxes()
     plotaxes.axescmd = 'subplot(212)'
     plotaxes.xlimits = 'auto'
-    plotaxes.ylimits = [-.5,1.1]
+    #plotaxes.ylimits = [-.5,1.1]
     plotaxes.title = 'Velocity'
 
     # Set up for item on these axes:
@@ -71,6 +71,7 @@ def setplot(plotdata):
     plotdata.latex_figsperline = 2           # layout of plots
     plotdata.latex_framesperline = 1         # layout of plots
     plotdata.latex_makepdf = False           # also run pdflatex?
+    plotdata.gif_movie = True
 
     return plotdata
 

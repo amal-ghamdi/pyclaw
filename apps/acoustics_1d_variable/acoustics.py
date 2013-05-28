@@ -68,7 +68,7 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     # Instantiate the domain and set the boundary conditions
     #========================================================================
     xlower = 0.0
-    xupper = 1300
+    xupper = 300
     cells_per_layer = 20
     mx = cells_per_layer * (xupper - xlower)
     x = pyclaw.Dimension('x',xlower,xupper,mx)
@@ -91,12 +91,19 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     #========================================================================
     shift = (xupper - xlower)/2.0
     a = 0.2
-    f = lambda x: a*np.exp(-((x-shift))**2)
+    #f = lambda x: a*np.exp(-((x-shift))**2)
+    
+    f = lambda x: a*(np.abs(x-(shift+0.25)) <= .25) 
+    print f(xc)[2970:3030] -aux[0][2970:3030]
 
+    print aux[0][2970:3030]
     state.q[0,:] = f(xc)
-    state.q[1,:] = state.q[0,:] 
+    state.q[1,:] = state.q[0,:]# /state.aux[0,:]  
 
-    solver.dt_initial=domain.grid.delta[0]/np.max(state.aux[1])*0.1
+    #solver.dt_initial=domain.grid.delta[0]/np.max(state.aux[1])*0.1
+    solver.cfl_desired = 1.0
+    solver.dt_variable = True
+    solver.max_steps = 100000
 
     #========================================================================
     # Set up the controller object
@@ -109,7 +116,7 @@ def acoustics(use_petsc=False,kernel_language='Fortran',solver_type='classic',ip
     claw.num_output_times = 5
     if disable_output:
         claw.output_format = None
-    claw.tfinal = 300.0
+    claw.tfinal = 100.0
 
     # Solve
     status = claw.run()
