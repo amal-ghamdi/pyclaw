@@ -346,9 +346,11 @@ class Solution(object):
             "implemented as of yet, please refer to the plotting module for" +
             " how to plot solutions.")
 
-    def save( viewer, write_aux=True, write_p,  frame_id): ### no file_name att
+    def view( viewer, write_aux=True, write_p,  frame_id): ### no file_name att
         r"""
         """
+        # if viewer is graphical , then
+        # else if viewer is checkpoint then
         viewer.view_int('frame_id', frame_id)
         viewer.view_double('time',self.t)
         viewer.view_int('num_eqn',self.num_eqn)
