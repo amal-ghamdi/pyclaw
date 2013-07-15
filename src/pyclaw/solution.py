@@ -346,15 +346,54 @@ class Solution(object):
             "implemented as of yet, please refer to the plotting module for" +
             " how to plot solutions.")
 
-    def save(file_name, viewer, write_aux=True, ):
+    def save( viewer, write_aux=True, write_p,  frame_id): ### no file_name att
         r"""
         """
-        viewer.view_int()
-        viewer.view_bool()
-        viewer.view_string()
-        viewer.view_dict()
-        viewer.view_array()
+        viewer.view_int('frame_id', frame_id)
+        viewer.view_double('time',self.t)
+        viewer.view_int('num_eqn',self.num_eqn)
+        viewer.view_int('nstates',len(self.states))
+        viewer.view_int('num_aux',self.num_aux)
+        viewer.view_int('num_dim',self.domain.num_dim)
+
+
+        # for i in range(0,len(solution.patchs)):
+        for state in self.states:
+            patch = state.patch
+            # Header for fort.qxxxx file
+            viewer.view_int('patch_number', patch.patch_index)
+            viewer.view_int('AMR_level', patch.level)
+
+            for dim in patch.dimensions:
+                viewer.view_int('m'+dim.name, dim.num_cells)
+            for dim in patch.dimensions:
+                viewer.view_double(dim.name+'low', dim.lower )
+            for dim in patch.dimensions:
+                viewer.view_double('d'+dim.name, dim.delta )
+            
+            
+            # Write data from q
+            if write_p:
+                q = state.p
+            else:
+                q = state.q
+
+            dims = patch.dimensions
+            if patch.num_dim <= 3:
+                viewer.view_array(q)  ### probably should transpose q[m,k]
+            else:
+                raise Exception("Dimension Exception in writing fort file.")
+            
+            if state.num_aux > 0 and write_aux:
+                aux = state.aux
+                ### another header?
+                dims = patch.dimensions
+                if patch.num_dim <= 3:
+                    viewer.view_array(aux)  ### probably should transpose q[m,k]
+
+
     def load():
+        pass
 
 
 if __name__ == "__main__":
