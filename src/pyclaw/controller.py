@@ -39,14 +39,6 @@ class Controller(object):
     #  ======================================================================
     #   Property Definitions
     #  ======================================================================
-    @property
-    def outdir_p(self):
-        r"""(string) - Directory to use for writing derived quantity files"""
-        return os.path.join(self.outdir,'_p')
-    @property
-    def F_path(self):
-        r"""(string) - Full path to output file for functionals"""
-        return os.path.join(self.outdir,self.F_file_name+'.txt')
 
     #  ======================================================================
     #   Initialization routines
@@ -76,8 +68,6 @@ class Controller(object):
         \*.data from rundir"""
         self.outdir = os.getcwd()+'/_output'
         r"""(string) - Output directory, directs output files to outdir"""
-        self.overwrite = True
-        r"""(bool) - Ok to overwrite old result in outdir, ``default = True``"""
 
         self.xclawcmd = 'xclaw'
         r"""(string) - Command to execute (if using fortran), defaults to xclaw or
@@ -85,7 +75,7 @@ class Controller(object):
         if sys.platform == 'cygwin':
             self.xclawcmd = 'xclaw.exe'
 
-        self.start_frame = 0
+
         self.xclawout = None
         r"""(string) - Where to write timestep messages"""
         self.xclawerr = None
@@ -100,64 +90,23 @@ class Controller(object):
         self.solver = None
         r"""(:class:`~pyclaw.solver.Solver`) - Solver object"""
         
-        # Output parameters for run convenience method
-        self.keep_copy = False 
-        r"""(bool) - Keep a copy in memory of every output time, 
-        ``default = False``"""
-        self.frames = []
-        r"""(list) - List of saved frames if ``keep_copy`` is set to ``True``"""
-        self.write_aux_init = False
-        r"""(bool) - Write out initial auxiliary array, ``default = False``"""
-        self.write_aux_always = False
-        r"""(bool) - Write out auxiliary array at every time step, 
-        ``default = False``"""
-        self.output_format = 'ascii'
-        r"""(list of strings) - Format or list of formats to output the data, 
-        if this is None, no output is performed.  See _pyclaw_io for more info
-        on available formats.  ``default = 'ascii'``"""
-        self.output_file_prefix = None
-        r"""(string) - File prefix to be appended to output files, 
-        ``default = None``"""
-        self.output_options = {}
-        r"""(dict) - Output options passed to function writing and reading 
-        data in output_format's format.  ``default = {}``"""
-        
         # Classic output parameters, used in run convenience method
         self.tfinal = 1.0
         r"""(float) - Final time output, ``default = 1.0``"""
-        self.output_style = 1
-        r"""(int) - Time output style, ``default = 1``"""
         self.verbosity = 0 
         r"""(int) - Level of output, ``default = 0``"""
-        self.num_output_times = 10                  # Outstyle 1 defaults
-        r"""(int) - Number of output times, only used with ``output_style = 1``,
-        ``default = 10``"""
-        self.out_times = np.linspace(0.0,self.tfinal,self.num_output_times
-                                     -self.start_frame) # Outstyle 2
-        r"""(int) - Output time list, only used with ``output_style = 2``,
-        ``default = numpy.linspace(0.0,tfinal,num_output_times)``"""
         
-        self.nstepout = 1               # Outstyle 3 defaults
-        r"""(int) - Number of steps between output, only used with 
-        ``output_style = 3``, ``default = 1``"""
-        
+        ### could go in the plot viewer
         # Data objects
         self.plotdata = None
         r"""(:class:`~visclaw.data.ClawPlotData`) - An instance of a 
         :class:`~visclaw.data.ClawPlotData` object defining the 
         objects plot parameters."""
         
-        # Derived quantity p
-        self.file_prefix_p = 'claw_p'
-        r"""(string) - File prefix to be prepended to derived quantity output files"""
-        self.compute_p = None
-        r"""(function) - function that computes derived quantities"""
-        
-        # functionals
-        self.compute_F = None
-        r"""(function) - Function that computes density of functional F"""
-        self.F_file_name = 'F'
-        r"""(string) - Name of text file containing functionals"""
+
+
+        self.start_frame = 0
+
 
     # ========== Access methods ===============================================
     def __str__(self):        
@@ -223,7 +172,25 @@ class Controller(object):
         ### create viewer
         ### hand it in
         ### destroy viewer
-        self.start_frame = self.solution.start_frame
+        ### controller should provide tfinal for each viewer
+
+        ### setting the start frame for each viewer
+        
+        ### Create default viewer in the case of no viewers were
+        ### setting tinitial?
+
+        ### set up
+        if len(self.viewers) == 0:
+            ### you should import the correct pyclaw lib
+            default_viewer = pyclaw.viewer.AsciiViewer()
+            self.viewers.append(default_viewer)
+            default_viewer.num_output_times = 10
+        else:
+            self.viewers[0].tfinal = self.tfinal
+            self.viewers[0].start_frame = self.start_frame
+
+
+        ### elsewhere self.start_frame = self.solution.start_frame
         if len(self.solution.patch.grid.gauges)>0:
             self.solution.patch.grid.setup_gauge_files(self.outdir)
         frame = FrameCounter()
@@ -239,43 +206,66 @@ class Controller(object):
 
         # Write initial gauge values
         self.solver.write_gauge_values(self.solution)
+        
+
+        ### define viewers to be viewer if you only have one viewer,
+        ### or to be the first one? what is the convention? 
 
         # Output styles
-        if self.output_style == 1:
-            output_times = np.linspace(self.solution.t,
-                    self.tfinal,self.num_output_times+1
-                    -self.start_frame)
-        elif self.output_style == 2:
-            output_times = self.out_times
-        elif self.output_style == 3:
-            output_times = np.ones((self.num_output_times+1
-                                    -self.start_frame))
-        else:
-            raise Exception("Invalid output style %s" % self.output_style)  
-         
+        ###if self.output_style == 1:
+        ###    output_times = np.linspace(self.solution.t,
+        ###            self.tfinal,self.num_output_times+1
+        ###            -self.start_frame)
+        ###elif self.output_style == 2:
+        ###    output_times = self.out_times
+        ###elif self.output_style == 3:
+        ###    output_times = np.ones((self.num_output_times+1
+        ###                            -self.start_frame))
+        ###else:
+        ###    raise Exception("Invalid output style %s" % self.output_style)  
+        
+        ### this leave space for customized viewer (if viewer == 'checkpoint')
+        self.solution.view_function = self.solution.view
+
+
+        ### this propaply be a list of tuples containing the viewer index and the time
+        ### modify the way it is set
+        output_times = self.viewers[0].out_times
+        
+        ### modify the palce of the import and the way the library is defined
+        from clawpack.pyclaw.viewer import formatter 
+
         # Output and save initial frame
         if self.keep_copy:
             self.frames.append(copy.deepcopy(self.solution))
-        if self.output_format is not None:
-            if os.path.exists(self.outdir) and self.overwrite==False:
+        ### modify
+        if self.viewers[0].file_format is not None:
+            if os.path.exists(self.outdir) and self.viewers[0].overwrite==False:
                 raise Exception("Refusing to overwrite existing output data. \
                  \nEither delete/move the directory or set controller.overwrite=True.")
-            if self.compute_p is not None:
-                self.compute_p(self.solution.state)
-                self.solution.write(frame,self.outdir_p,
-                                        self.output_format,
-                                        self.file_prefix_p,
-                                        write_aux = False,
-                                        options = self.output_options,
-                                        write_p = True) 
+            if self.viewers[0].compute_p is not None:
+                self.viewers[0].compute_p(self.solution.state)
+                formattor = formatter.AsciiFormatter(frame,'./testp') ### frame, file
 
-            self.solution.write(frame,self.outdir,
-                                        self.output_format,
-                                        self.output_file_prefix,
-                                        self.write_aux_init,
-                                        self.output_options)
+                ### modify parameters
+                self.solution.view_function(formattor,write_p=True)
 
-        self.write_F('w')
+###                self.solution.view_function(frame,self.p_outdir,
+###                                        self.output_format,
+###                                        self.p_file_prefix ,
+###                                        write_aux = False,
+###                                        options = self.output_options,
+###                                        write_p = True) 
+            formattor = formatter.AsciiFormatter(frame,'./test')
+            self.solution.view_function( formattor)
+###            self.solution.write(frame,self.outdir,
+###                                        self.output_format,
+###                                        self.output_file_prefix,
+###                                        self.write_aux_init,
+###                                        self.output_options)
+
+### later:
+###        self.write_F('w')
 
         self.log_info("Solution %s computed for time t=%f" % 
                         (frame,self.solution.t) )
@@ -294,9 +284,9 @@ class Controller(object):
             if self.output_format is not None:
                 if self.compute_p is not None:
                     self.compute_p(self.solution.state)
-                    self.solution.write(frame,self.outdir_p,
+                    self.solution.write(frame,self.p_outdir,
                                             self.output_format,
-                                            self.file_prefix_p,
+                                            self.p_file_prefix ,
                                             write_aux = False, 
                                             options = self.output_options,
                                             write_p = True) 
@@ -329,7 +319,7 @@ class Controller(object):
                 F[i] = self.solution.state.sum_F(i)
             if self.is_proc_0():
                 t=self.solution.t
-                F_file = open(self.F_path,mode)
+                F_file = open(self.F_outdir,mode)
                 F_file.write(str(t)+' '+' '.join(str(j) for j in F) + '\n')
                 F_file.close()
     

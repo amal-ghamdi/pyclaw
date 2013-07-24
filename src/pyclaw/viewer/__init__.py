@@ -4,5 +4,6 @@
 
 import logging
 
-from .asciiViewer import AsciiViewer
+from .viewer import RawDataViewer
+from .formatter import AsciiFormatter
 

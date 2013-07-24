@@ -43,6 +43,13 @@ def advection(kernel_language='Python',iplot=False,htmlplot=False,
     state.q[0,:] = np.exp(-beta * (xc-x0)**2) * np.cos(gamma * (xc - x0))
 
     claw = pyclaw.Controller()
+    ### trial 
+    from clawpack.pyclaw import viewer
+    v = viewer.RawDataViewer()
+    ### not necessarily list
+    claw.viewers = [v]
+    ###
+    
     claw.keep_copy = True
     claw.solution = pyclaw.Solution(state,domain)
     claw.solver = solver
@@ -50,7 +57,8 @@ def advection(kernel_language='Python',iplot=False,htmlplot=False,
     if outdir is not None:
         claw.outdir = outdir
     else:
-        claw.output_format = None
+        ### fix index
+        claw.viewers[0].file_format = None
 
     claw.tfinal =1.0
     status = claw.run()

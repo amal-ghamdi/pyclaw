@@ -92,6 +92,73 @@ class Solution(object):
         return self.domain.patch
 
     @property
+    def t(self):
+        r"""(float) - :attr:`State.t` of base state"""
+        return self._get_base_state_attribute('t')
+    @t.setter
+    def t(self,value):
+        self.set_all_states('t',value) 
+
+    @property
+    def num_eqn(self):
+        r"""(int) - :attr:`State.num_eqn` of base state"""
+        return self._get_base_state_attribute('num_eqn')
+    @property
+    def mp(self):
+        r"""(int) - :attr:`State.mp` of base state"""
+        return self._get_base_state_attribute('mp')
+    @property
+    def mF(self):
+        r"""(int) - :attr:`State.mF` of base state"""
+        return self._get_base_state_attribute('mF')
+    @property
+    def q(self):
+        r"""(ndarray(...,:attr:`State.num_eqn`)) - :attr:`State.q` of base state"""
+        return self._get_base_state_attribute('q')
+    @property
+    def p(self):
+        r"""(ndarray(...,:attr:`State.mp`)) - :attr:`State.p` of base state"""
+        return self._get_base_state_attribute('p')
+    @property
+    def F(self):
+        r"""(ndarray(...,:attr:`State.mF`)) - :attr:`State.F` of base 
+                  state"""
+        return self._get_base_state_attribute('F')
+
+    @property
+    def aux(self):
+        r"""(ndarray(...,:attr:`State.num_aux`)) - :attr:`State.aux` of base 
+                  state"""
+        return self._get_base_state_attribute('aux')
+    @aux.setter
+    def aux(self, value): 
+        if len(self.states) == 1: 
+            setattr(self.states[0],'aux',value)
+
+    @property
+    def capa(self):
+        r"""(ndarray(...)) - :attr:`State.capa` of base state"""
+        return self._get_base_state_attribute('capa')
+    @capa.setter
+    def capa(self, value):
+        if len(self.states) == 1: 
+            setattr(self.states[0],'capa',value)
+
+    @property
+    def problem_data(self):
+        r"""(dict) - :attr:`State.problem_data` of base state"""
+        return self._get_base_state_attribute('problem_data')
+    @problem_data.setter
+    def problem_data(self, value):
+        if len(self.states) == 1: 
+            setattr(self.states[0],'problem_data',value)
+
+    @property
+    def num_aux(self):
+        r"""(int) - :attr:`State.num_aux` of base state"""
+        return self._get_base_state_attribute('num_aux')
+
+    @property
     def start_frame(self):
         r"""(int) - : Solution start frame number in case the `Solution`
         object is initialized by loading frame from file"""
@@ -346,32 +413,35 @@ class Solution(object):
             "implemented as of yet, please refer to the plotting module for" +
             " how to plot solutions.")
 
-    def view( viewer, write_aux=True, write_p,  frame_id): ### no file_name att
+    ### viewer --> formatter
+    def view(self, viewer, write_aux=False,options={},write_p=False): ### no file_name att
         r"""
         """
+        viewer.open()
         # if viewer is graphical , then
         # else if viewer is checkpoint then
-        viewer.view_int('frame_id', frame_id)
-        viewer.view_double('time',self.t)
-        viewer.view_int('num_eqn',self.num_eqn)
-        viewer.view_int('nstates',len(self.states))
-        viewer.view_int('num_aux',self.num_aux)
-        viewer.view_int('num_dim',self.domain.num_dim)
+        print type(viewer.frame.get_counter())
+        viewer.view_int( viewer.frame.get_counter(),'frame_id')
+        viewer.view_double(self.t, 'time')
+        viewer.view_int(self.num_eqn, 'num_eqn')
+        viewer.view_int(len(self.states), 'nstates')
+        viewer.view_int(self.num_aux,'num_aux')
+        viewer.view_int(self.domain.num_dim, 'num_dim')
 
 
         # for i in range(0,len(solution.patchs)):
         for state in self.states:
             patch = state.patch
             # Header for fort.qxxxx file
-            viewer.view_int('patch_number', patch.patch_index)
-            viewer.view_int('AMR_level', patch.level)
+            viewer.view_int( patch.patch_index,'patch_number')
+            viewer.view_int( patch.level,'AMR_level')
 
             for dim in patch.dimensions:
-                viewer.view_int('m'+dim.name, dim.num_cells)
+                viewer.view_int( dim.num_cells,'m'+dim.name)
             for dim in patch.dimensions:
-                viewer.view_double(dim.name+'low', dim.lower )
+                viewer.view_double(dim.lower,dim.name+'low' )
             for dim in patch.dimensions:
-                viewer.view_double('d'+dim.name, dim.delta )
+                viewer.view_double( dim.delta,'d'+dim.name )
             
             
             # Write data from q
@@ -392,7 +462,8 @@ class Solution(object):
                 dims = patch.dimensions
                 if patch.num_dim <= 3:
                     viewer.view_array(aux)  ### probably should transpose q[m,k]
-
+            viewer.close()
+            ###viewer.destroy()
 
     def load():
         pass
